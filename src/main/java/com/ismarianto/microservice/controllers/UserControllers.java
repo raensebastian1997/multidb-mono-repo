@@ -1,5 +1,10 @@
 package com.ismarianto.microservice.controllers;
 
+
+import com.ismarianto.microservice.dto.UserDtos.UserDTO;
+import com.ismarianto.microservice.dto.UserDtos.UserListApiResponse;
+
+import com.ismarianto.microservice.lib.RestConsume;
 import com.ismarianto.microservice.models.primary.Users;
 import com.ismarianto.microservice.repository.primary.UsersRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +29,7 @@ public class UserControllers {
     public UserControllers(UsersRepository usersRepository, @Qualifier("warehouseJdbcTemplate") JdbcTemplate warehouseJdbcTemplate) {
         this.usersRepository = usersRepository;
         this.warehouseJdbcTemplate = warehouseJdbcTemplate;
-     }
+    }
 
 
     @GetMapping
@@ -59,7 +63,6 @@ public class UserControllers {
         }
     }
 
-    @Transactional("primaryTransactionManager")
     @GetMapping("/{id}")
     public ResponseEntity<Object> getUserById(@PathVariable Long id) {
         try {
@@ -84,16 +87,30 @@ public class UserControllers {
     @GetMapping("/departement")
     public ResponseEntity<Object> getDepartement() {
         try {
-            List<Map<String, Object>> departments =
-                    warehouseJdbcTemplate.queryForList("SELECT * FROM departemen"); // jika akses dari other source
+
+            List<Map<String, Object>> departments = warehouseJdbcTemplate.queryForList("SELECT * FROM departemen");
+
+
+            UserListApiResponse response = RestConsume.call(
+                    "http://localhost:8080/api/v1/users",
+                    "GET",
+                    UserListApiResponse.class
+            );
+
+            List<UserDTO> users = response.data();
             return new ResponseEntity<>(
-                    Map.of("message", "success", "data", departments),
+                    Map.of(
+                            "message", "success",
+                            "data", departments,
+                            "users", users
+                    ),
                     HttpStatus.OK);
+
         } catch (Exception e) {
-            e.printStackTrace();
-            log.info("Error: {}", e.getMessage());
+            log.error("Error getDepartement: {}", e.getMessage());
             Throwable root = e;
             while (root.getCause() != null) root = root.getCause();
+
             return new ResponseEntity<>(
                     Map.of(
                             "message", e.getMessage(),
@@ -102,4 +119,6 @@ public class UserControllers {
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+
 }
