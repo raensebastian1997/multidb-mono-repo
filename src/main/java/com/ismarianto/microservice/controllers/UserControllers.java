@@ -14,8 +14,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
+
+
 
 @Slf4j
 @RestController
@@ -35,7 +38,7 @@ public class UserControllers {
     @GetMapping
     public ResponseEntity<Object> getAllUsers() {
         try {
-            List<Users> users = usersRepository.findAll();
+            List<Users> users = usersRepository.findAll().stream().peek(e-> e.setPassword(null)).toList();
             return new ResponseEntity<>(Map.of("message", "success", "data", users), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(Map.of("message", e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
